@@ -20,13 +20,20 @@ const io = new Server(server, {
 });
 
 const client = new Client({
-    authStrategy: new LocalAuth({ dataPath: './sessions' }),
+    authStrategy: new LocalAuth({
+        dataPath: './sessions'
+    }),
     puppeteer: {
         headless: true,
         args: [
-            '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas', '--no-first-run', '--no-zygote',
-            '--single-process', '--disable-gpu'
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process', 
+            '--disable-gpu'
         ]
     }
 });
