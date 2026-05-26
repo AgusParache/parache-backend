@@ -20,24 +20,12 @@ const io = new Server(server, {
 });
 
 const client = new Client({
-    authStrategy: new LocalAuth({
-        dataPath: './sessions'
-    }),
+    authStrategy: new LocalAuth(),
     puppeteer: {
         headless: true,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--single-process', 
-            '--disable-gpu'
-        ]
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
     }
 });
-
 client.on('qr', (qr) => {
     console.log('🚨 ESCANEA ESTE CÓDIGO QR CON TU WHATSAPP 🚨');
     qrcode.generate(qr, { small: true });
