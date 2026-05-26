@@ -23,8 +23,7 @@ const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
         headless: true,
-        executablePath: '/usr/bin/google-chrome-stable', // <-- ¡Esta es la ruta en Railway!
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        executablePath: '/usr/bin/google-chrome-stable', 
     }
 });
 
