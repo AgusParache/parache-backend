@@ -23,10 +23,16 @@ const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
         headless: true,
-        executablePath: '/usr/bin/google-chrome-stable', 
+        executablePath: '/usr/bin/google-chrome-stable',
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-extensions',
+            '--no-first-run'
+        ]
     }
 });
-
 client.on('qr', (qr) => {
     console.log('🚨 ESCANEA ESTE CÓDIGO QR CON TU WHATSAPP 🚨');
     qrcode.generate(qr, { small: true });
