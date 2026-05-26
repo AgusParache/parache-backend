@@ -57,9 +57,10 @@ const numerosDestino = [
 
 const db = mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root', 
-    password: process.env.DB_PASSWORD || '', 
-    database: process.env.DB_NAME || 'control_facturas'
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || 'admin1234',
+    database: process.env.DB_NAME || 'control_facturas',
+    port: process.env.DB_PORT || 3306
 });
 
 db.connect((err) => {
