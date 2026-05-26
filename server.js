@@ -23,9 +23,11 @@ const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
         headless: true,
+        executablePath: '/usr/bin/google-chrome-stable', // <-- ¡Esta es la ruta en Railway!
         args: ['--no-sandbox', '--disable-setuid-sandbox']
     }
 });
+
 client.on('qr', (qr) => {
     console.log('🚨 ESCANEA ESTE CÓDIGO QR CON TU WHATSAPP 🚨');
     qrcode.generate(qr, { small: true });
