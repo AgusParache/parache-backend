@@ -1,8 +1,9 @@
-# Usamos la imagen oficial y limpia de Node
-FROM node:18-slim
+# Usamos Node 22 en su versión slim como recomendó Railway
+FROM node:22-slim
 
-# Instalamos las herramientas necesarias para que corra Puppeteer sin problemas en Railway
+# Instalamos git (para resolver el error de clonado) y dependencias para Chromium
 RUN apt-get update && apt-get install -y \
+    git \
     chromium \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
@@ -10,17 +11,17 @@ RUN apt-get update && apt-get install -y \
 # Definimos el directorio de trabajo
 WORKDIR /app
 
-# Copiamos los archivos de configuración
+# Copiamos solo el package.json limpio
 COPY package.json ./
 
-# Instalamos las dependencias limpias de npm
+# Instalamos las dependencias
 RUN npm install
 
-# Copiamos el resto de tu código
+# Copiamos el resto del backend
 COPY . .
 
-# Exponemos el puerto de tu servidor
+# Exponemos el puerto
 EXPOSE 3000
 
-# Iniciamos la aplicación
+# Arrancamos el servidor
 CMD ["node", "server.js"]
