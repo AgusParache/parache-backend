@@ -49,7 +49,7 @@ const numerosDestino = [
 
 // MODIFICACIÓN DE LA CONEXIÓN PARA APUNTAR A LA NUBE DE RAILWAY
 const db = mysql.createConnection({
-    host: 'acela.proxy.rlw.net',
+    host: '20.225.195.40',
     user: 'root',
     password: 'TRiyEtsikDEeoZGLTRFROwUnVLKgOdqH',
     database: 'railway',
