@@ -30,6 +30,7 @@ const client = new Client({
         ]
     }
 });
+
 client.on('qr', (qr) => {
     console.log('🚨 ESCANEA ESTE CÓDIGO QR CON TU WHATSAPP 🚨');
     qrcode.generate(qr, { small: true });
@@ -40,23 +41,27 @@ client.on('ready', () => {
 });
 
 client.initialize();
-
 const numerosDestino = [
     '5493815675962@c.us',
     '5493816622978@c.us',
     '5493816655670@c.us'
 ];
 
+// MODIFICACIÓN DE LA CONEXIÓN PARA APUNTAR A LA NUBE DE RAILWAY
 const db = mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'admin1234',
-    database: process.env.DB_NAME || 'control_facturas',
-    port: process.env.DB_PORT || 3306
+    host: 'acela.proxy.rlw.net',
+    user: 'root',
+    password: 'TRiyEtsikDEeoZGLTRFROwUnVLKgOdqH',
+    database: 'railway',
+    port: 30826
 });
 
 db.connect((err) => {
-    if (!err) console.log('Conectado a MySQL Workbench con éxito');
+    if (err) {
+        console.error('❌ Error conectando a la base de datos de Railway:', err.message);
+    } else {
+        console.log('✅ ¡Conectado a la base de datos en Railway con éxito!');
+    }
 });
 
 // EVENTO DE CONEXIÓN SOCKET
