@@ -8,10 +8,13 @@ const { Server } = require('socket.io');
 require('dotenv').config();
 
 const app = express();
+
 app.use(cors({
-    origin: 'https://parache-frontend-kk3atxfwh-agustina-s-projects7.vercel.app', // CAMBIA ESTO POR TU URL REAL SI ES OTRA
-    methods: ["GET", "POST", "PUT", "DELETE"]
+  origin: 'https://parache-frontend-8hensvy2x-agustina-s-projects7.vercel.app/', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
 }));
+
 app.use(express.json());
 
 const server = http.createServer(app);
