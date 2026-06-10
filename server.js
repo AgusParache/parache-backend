@@ -6,7 +6,7 @@ const qrcode = require('qrcode-terminal');
 const http = require('http'); 
 const { Server } = require('socket.io'); 
 require('dotenv').config();
-const cron = require('node-cron'); 
+
 const app = express();
 
 const corsOptions = {
@@ -22,7 +22,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 app.use(express.json());
-
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -156,35 +155,10 @@ app.post('/api/notificar-whatsapp', (req, res) => {
         if (err || result.length === 0) return res.json({ message: "Sin pendientes" });
 
         let mensaje = `🚨 *PARACHE HERRAMIENTAS - ALERTA DE PAGO* 🚨\n`;
+        // ... Lógica del mensaje idéntica
         numerosDestino.forEach(numero => client.sendMessage(numero, mensaje).catch(e => console.error(e)));
         res.json({ success: true });
     });
-});
-function ejecutarNotificaciones(callback) {
-    const hoyStr = new Date().toLocaleDateString('sv-SE'); 
-    const sql = "SELECT id_factura, nombre_proveedor, monto, detalle FROM facturas WHERE estado = 'pendiente' AND fecha_a_realizar = ?";
-    
-    db.query(sql, [hoyStr], (err, result) => {
-        if (err || result.length === 0) {
-            console.log("Sin facturas pendientes para notificar hoy.");
-            if (callback) callback();
-            return;
-        }
-
-        let mensaje = `🚨 *PARACHE HERRAMIENTAS - ALERTA DE PAGO DIARIA* 🚨\n\n`;
-        result.forEach((f, index) => {
-            mensaje += `*${index + 1}. ${f.nombre_proveedor}* - $${Number(f.monto).toLocaleString('es-AR')}\n`;
-        });
-
-        numerosDestino.forEach(numero => client.sendMessage(numero, mensaje).catch(e => console.error(e)));
-        console.log(`Notificaciones enviadas: ${result.length}`);
-        if (callback) callback();
-    });
-}
-
-cron.schedule('0 12 * * *', () => {
-    console.log('Cron Job: Iniciando revisión de facturas...');
-    ejecutarNotificaciones();
 });
 
 const PORT = process.env.PORT || 8080;
