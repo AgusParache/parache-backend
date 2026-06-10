@@ -148,24 +148,37 @@ app.put('/api/facturas/:id', (req, res) => {
         });
     });
 });
-const cron = require('node-cron');
-cron.schedule('0 2 * * *', () => {
-    console.log('Ejecutando revisión diaria de facturas...');
 app.post('/api/notificar-whatsapp', (req, res) => {
+    enviarNotificacionesPendientes((err, result) => {
+        if (err) return res.status(500).json({ error: "Error al enviar" });
+        res.json({ success: true, count: result });
+    });
+});
+
+function enviarNotificacionesPendientes(callback) {
     const hoyStr = new Date().toLocaleDateString('sv-SE'); 
     const sql = "SELECT id_factura, nombre_proveedor, monto, detalle FROM facturas WHERE estado = 'pendiente' AND fecha_a_realizar <= ?";
     
     db.query(sql, [hoyStr], (err, result) => {
-        if (err || result.length === 0) return res.json({ message: "Sin pendientes" });
+        if (err || result.length === 0) return callback(null, 0);
 
-        let mensaje = `🚨 *PARACHE HERRAMIENTAS - ALERTA DE PAGO* 🚨\n`;
-        // ... Lógica del mensaje idéntica
+        let mensaje = `🚨 *PARACHE HERRAMIENTAS - ALERTA DE PAGO DIARIA* 🚨\n\n`;
+        result.forEach((f, index) => {
+            mensaje += `*${index + 1}. ${f.nombre_proveedor}* - $${Number(f.monto).toLocaleString('es-AR')}\n`;
+        });
+
         numerosDestino.forEach(numero => client.sendMessage(numero, mensaje).catch(e => console.error(e)));
-        res.json({ success: true });
+callback(null, result.length);
     });
+}
+
+
+const cron = require('node-cron');
+cron.schedule('0 9 * * *', () => {
+    console.log('Ejecutando revisión diaria de facturas...');
+    enviarNotificacionesPendientes(() => console.log('Revisión diaria completada.'));
 });
 
-});
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
