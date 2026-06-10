@@ -10,7 +10,7 @@ require('dotenv').config();
 const app = express();
 
 app.use(cors({
-  origin: 'https://parache-frontend-8hensvy2x-agustina-s-projects7.vercel.app',
+  origin: 'https://parache-frontend-clzo83mdm-agustina-s-projects7.vercel.app',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
