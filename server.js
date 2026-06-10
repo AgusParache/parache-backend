@@ -63,7 +63,6 @@ db.connect((err) => {
     }
 });
 
-// EVENTO DE CONEXIÓN SOCKET
 io.on('connection', (socket) => {
     console.log(`🔌 Cliente conectado al tiempo real: ${socket.id}`);
 });
