@@ -1,6 +1,7 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
+const cron = require('node-cron');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const http = require('http'); 
@@ -155,10 +156,33 @@ app.post('/api/notificar-whatsapp', (req, res) => {
         if (err || result.length === 0) return res.json({ message: "Sin pendientes" });
 
         let mensaje = `🚨 *PARACHE HERRAMIENTAS - ALERTA DE PAGO* 🚨\n`;
-        // ... Lógica del mensaje idéntica
+
         numerosDestino.forEach(numero => client.sendMessage(numero, mensaje).catch(e => console.error(e)));
         res.json({ success: true });
     });
+});
+
+function ejecutarNotificaciones() {
+    const hoy = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
+    console.log(`Cron Job: Buscando facturas con vencimiento ${hoy}...`);
+    
+    const sql = "SELECT * FROM facturas WHERE estado = 'pendiente' AND fecha_a_realizar = ?";
+    
+    db.query(sql, [hoy], (err, result) => {
+        if (err) { console.error('Error DB:', err); return; }
+        if (result.length === 0) { console.log("Sin facturas para hoy."); return; }
+
+        let mensaje = `🚨 *PARACHE HERRAMIENTAS - RECORDATORIO DE PAGO HOY* 🚨\n\n`;
+        result.forEach((f, index) => {
+            mensaje += `*${index + 1}. ${f.nombre_proveedor}* - $${Number(f.monto).toLocaleString('es-AR')}\n`;
+        });
+
+        numerosDestino.forEach(num => client.sendMessage(num, mensaje).catch(e => console.error(e)));
+    });
+}
+
+cron.schedule('0 12 * * *', () => {
+    ejecutarNotificaciones();
 });
 
 const PORT = process.env.PORT || 8080;
