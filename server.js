@@ -47,13 +47,12 @@ const numerosDestino = [
     '5493816655670@c.us'
 ];
 
-// MODIFICACIÓN DE LA CONEXIÓN PARA APUNTAR A LA NUBE DE RAILWAY
 const db = mysql.createConnection({
-    host: '20.225.195.40',
-    user: 'root',
-    password: 'TRiyEtsikDEeoZGLTRFROwUnVLKgOdqH',
-    database: 'railway',
-    port: 30826
+    host: process.env.DB_HOST || 'mysql.railway.internal', // Si no detecta la variable, usa el host privado
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || 'nOWhNxQGONZVpayTqmUHCUYOHuuEbKtx', // Tu nueva clave real
+    database: process.env.DB_NAME || 'railway',
+    port: process.env.DB_PORT || 3306 // Puerto interno de comunicación en el servidor
 });
 
 db.connect((err) => {
