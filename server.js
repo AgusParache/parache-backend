@@ -8,7 +8,10 @@ const { Server } = require('socket.io');
 require('dotenv').config();
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: 'https://parache-frontend-kk3atxfwh-agustina-s-projects7.vercel.app', // CAMBIA ESTO POR TU URL REAL SI ES OTRA
+    methods: ["GET", "POST", "PUT", "DELETE"]
+}));
 app.use(express.json());
 
 const server = http.createServer(app);
@@ -48,19 +51,15 @@ const numerosDestino = [
 ];
 
 const db = mysql.createConnection({
-    host: process.env.DB_HOST || 'mysql.railway.internal', // Si no detecta la variable, usa el host privado
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'nOWhNxQGONZVpayTqmUHCUYOHuuEbKtx', // Tu nueva clave real
-    database: process.env.DB_NAME || 'railway',
-    port: process.env.DB_PORT || 3306 // Puerto interno de comunicación en el servidor
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD, 
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT || 3306
 });
-
 db.connect((err) => {
-    if (err) {
-        console.error('❌ Error conectando a la base de datos de Railway:', err.message);
-    } else {
-        console.log('✅ ¡Conectado a la base de datos en Railway con éxito!');
-    }
+    if (err) console.error('❌ Error DB:', err.message);
+    else console.log('✅ ¡Conectado a la base de datos!');
 });
 
 io.on('connection', (socket) => {
@@ -153,7 +152,7 @@ app.post('/api/notificar-whatsapp', (req, res) => {
     });
 });
 
-const PORT = process.env.PORT || 10000; 
+const PORT = process.env.PORT || 10000;
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor en tiempo real corriendo en el puerto ${PORT}`);
+    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
