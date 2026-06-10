@@ -23,6 +23,8 @@ app.use(cors(corsOptions));
 
 app.use(express.json());
 
+
+
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
@@ -146,7 +148,9 @@ app.put('/api/facturas/:id', (req, res) => {
         });
     });
 });
-
+const cron = require('node-cron');
+cron.schedule('0 2 * * *', () => {
+    console.log('Ejecutando revisión diaria de facturas...');
 app.post('/api/notificar-whatsapp', (req, res) => {
     const hoyStr = new Date().toLocaleDateString('sv-SE'); 
     const sql = "SELECT id_factura, nombre_proveedor, monto, detalle FROM facturas WHERE estado = 'pendiente' AND fecha_a_realizar <= ?";
@@ -159,6 +163,8 @@ app.post('/api/notificar-whatsapp', (req, res) => {
         numerosDestino.forEach(numero => client.sendMessage(numero, mensaje).catch(e => console.error(e)));
         res.json({ success: true });
     });
+});
+
 });
 
 const PORT = process.env.PORT || 8080;
