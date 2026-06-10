@@ -6,7 +6,7 @@ const qrcode = require('qrcode-terminal');
 const http = require('http'); 
 const { Server } = require('socket.io'); 
 require('dotenv').config();
-
+const cron = require('node-cron'); 
 const app = express();
 
 const corsOptions = {
@@ -22,7 +22,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 app.use(express.json());
-
 
 
 const server = http.createServer(app);
@@ -148,19 +147,29 @@ app.put('/api/facturas/:id', (req, res) => {
         });
     });
 });
-app.post('/api/notificar-whatsapp', (req, res) => {
-    enviarNotificacionesPendientes((err, result) => {
-        if (err) return res.status(500).json({ error: "Error al enviar" });
-        res.json({ success: true, count: result });
-    });
-});
 
-function enviarNotificacionesPendientes(callback) {
+app.post('/api/notificar-whatsapp', (req, res) => {
     const hoyStr = new Date().toLocaleDateString('sv-SE'); 
     const sql = "SELECT id_factura, nombre_proveedor, monto, detalle FROM facturas WHERE estado = 'pendiente' AND fecha_a_realizar <= ?";
     
     db.query(sql, [hoyStr], (err, result) => {
-        if (err || result.length === 0) return callback(null, 0);
+        if (err || result.length === 0) return res.json({ message: "Sin pendientes" });
+
+        let mensaje = `🚨 *PARACHE HERRAMIENTAS - ALERTA DE PAGO* 🚨\n`;
+        numerosDestino.forEach(numero => client.sendMessage(numero, mensaje).catch(e => console.error(e)));
+        res.json({ success: true });
+    });
+});
+function ejecutarNotificaciones(callback) {
+    const hoyStr = new Date().toLocaleDateString('sv-SE'); 
+    const sql = "SELECT id_factura, nombre_proveedor, monto, detalle FROM facturas WHERE estado = 'pendiente' AND fecha_a_realizar = ?";
+    
+    db.query(sql, [hoyStr], (err, result) => {
+        if (err || result.length === 0) {
+            console.log("Sin facturas pendientes para notificar hoy.");
+            if (callback) callback();
+            return;
+        }
 
         let mensaje = `🚨 *PARACHE HERRAMIENTAS - ALERTA DE PAGO DIARIA* 🚨\n\n`;
         result.forEach((f, index) => {
@@ -168,17 +177,15 @@ function enviarNotificacionesPendientes(callback) {
         });
 
         numerosDestino.forEach(numero => client.sendMessage(numero, mensaje).catch(e => console.error(e)));
-callback(null, result.length);
+        console.log(`Notificaciones enviadas: ${result.length}`);
+        if (callback) callback();
     });
 }
 
-
-const cron = require('node-cron');
-cron.schedule('0 9 * * *', () => {
-    console.log('Ejecutando revisión diaria de facturas...');
-    enviarNotificacionesPendientes(() => console.log('Revisión diaria completada.'));
+cron.schedule('0 12 * * *', () => {
+    console.log('Cron Job: Iniciando revisión de facturas...');
+    ejecutarNotificaciones();
 });
-
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
