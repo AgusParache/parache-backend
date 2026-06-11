@@ -228,7 +228,7 @@ function ejecutarNotificaciones() {
 }
 
 
-cron.schedule('32 19 * * *', () => {
+cron.schedule('35 19 * * *', () => {
 
 ejecutarNotificaciones();
 
