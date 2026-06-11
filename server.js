@@ -82,16 +82,22 @@ app.get('/api/facturas', (req, res) => {
 });
 
 app.post('/api/facturas', (req, res) => {
-   db.query(sqlInsert, [id_factura, nombre_proveedor, monto, fecha_a_realizar, detalle], (err, result) => {
+    // 1. Extraer datos del body correctamente
+    const { id_factura, nombre_proveedor, monto, fecha_a_realizar, detalle } = req.body;
+    
+    // 2. Definir la consulta
+    const sqlInsert = "INSERT INTO facturas (id_factura, nombre_proveedor, monto, fecha_a_realizar, detalle, estado) VALUES (?, ?, ?, ?, ?, 'pendiente')";
+
+    // 3. Ejecutar
+    db.query(sqlInsert, [id_factura, nombre_proveedor, monto, fecha_a_realizar, detalle], (err, result) => {
         if (err) return res.status(500).json({ error: err.sqlMessage });
         
         io.emit('facturas_actualizadas');
 
-        // --- ESTE ES EL BLOQUE QUE HACE EL ENVÍO ---
+     
         const hoyStr = new Date().toLocaleDateString('sv-SE'); 
-        if (fecha_a_realizar === hoyStr) {
-            let mensaje = `🚨 *NUEVA FACTURA REGISTRADA PARA HOY* 🚨\n\n`;
-            mensaje += `Proveedor: ${nombre_proveedor}\nMonto: $${Number(monto).toLocaleString('es-AR')}`;
+        if (fecha_a_realizar === hoyStr && client.info) {
+            let mensaje = `🚨 *NUEVA FACTURA REGISTRADA PARA HOY* 🚨\n\nProveedor: ${nombre_proveedor}\nMonto: $${Number(monto).toLocaleString('es-AR')}`;
             
             numerosDestino.forEach(async (numero) => {
                 try {
@@ -166,7 +172,7 @@ function ejecutarNotificaciones() {
     });
 }
 
-cron.schedule('50 19 * * *', () => {
+cron.schedule('53 19 * * *', () => {
     ejecutarNotificaciones();
 });
 
