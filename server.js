@@ -66,18 +66,13 @@ methods: ["GET", "POST", "PUT"]
 
 const client = new Client({
     authStrategy: new LocalAuth({
-        dataPath: '.wwebjs_auth' 
+        dataPath: '/app/.wwebjs_auth'
     }),
     puppeteer: {
         headless: true,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage'
-        ]
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
     }
 });
-
 client.on('qr', (qr) => {
 
 console.log('🚨 ESCANEA ESTE CÓDIGO QR CON TU WHATSAPP 🚨');
@@ -139,32 +134,19 @@ io.on('connection', (socket) => {
 console.log(`🔌 Cliente conectado al tiempo real: ${socket.id}`);
 
 });
-async function enviarWhatsAppSeguro(mensaje) {
-  
-    if (!client.info) {
-        console.warn("⚠️ Intento de envío abortado: El cliente de WhatsApp no está listo.");
-        return; 
+async function enviarMensajeSeguro(cliente, numero, mensaje) {
+    if (!cliente.info) {
+        console.warn("El cliente no está listo aún. Intentando más tarde...");
+        return;
     }
-
-    for (const numero of numerosDestino) {
-        try {
-            const chat = await client.getChatById(numero);
-            
-            if (!chat) {
-                console.error(`No se pudo encontrar el chat para: ${numero}`);
-                continue;
-            }
-
-            await chat.sendStateTyping();
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            await chat.sendMessage(mensaje);
-            console.log(`Mensaje enviado a ${numero}`);
-        } catch (e) {
-            console.error(`Error enviando a ${numero}:`, e);
-        }
+    
+    try {
+        const chat = await cliente.getChatById(numero);
+        await chat.sendMessage(mensaje);
+    } catch (error) {
+        console.error("Error al enviar mensaje:", error);
     }
 }
-
 app.post('/api/facturas', (req, res) => {
     const { id_factura, nombre_proveedor, monto, fecha_a_realizar, detalle } = req.body;
     const sqlInsert = "INSERT INTO facturas (id_factura, nombre_proveedor, monto, fecha_a_realizar, detalle, estado) VALUES (?, ?, ?, ?, ?, 'pendiente')";
