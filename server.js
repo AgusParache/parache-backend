@@ -353,7 +353,7 @@ numerosDestino.forEach(num => client.sendMessage(num, mensaje).catch(e => consol
 
 
 
-cron.schedule('35 18 * * *', () => {
+cron.schedule('45 18 * * *', () => {
 
 ejecutarNotificaciones();
 
