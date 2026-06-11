@@ -149,13 +149,12 @@ io.on('connection', (socket) => {
 console.log(`🔌 Cliente conectado al tiempo real: ${socket.id}`);
 
 });
-
 async function enviarWhatsAppSeguro(mensaje) {
     for (const numero of numerosDestino) {
         try {
             const chat = await client.getChatById(numero);
             await chat.sendStateTyping();
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Pausa de 2s
+            await new Promise(resolve => setTimeout(resolve, 2000));
             await chat.sendMessage(mensaje);
             console.log(`Mensaje enviado a ${numero}`);
         } catch (e) {
@@ -165,205 +164,67 @@ async function enviarWhatsAppSeguro(mensaje) {
 }
 
 
-app.get('/api/facturas', (req, res) => {
-
-const sql = "SELECT id_factura, nombre_proveedor, monto, DATE_FORMAT(fecha_a_realizar, '%Y-%m-%d') AS fecha_a_realizar, detalle, estado FROM facturas ORDER BY fecha_a_realizar ASC";
-
-db.query(sql, (err, result) => {
-
-if (err) return res.status(500).json({ error: err.sqlMessage });
-
-res.json(result);
-
-});
-
-});
-
-
-
 app.post('/api/facturas', (req, res) => {
+    const { id_factura, nombre_proveedor, monto, fecha_a_realizar, detalle } = req.body;
+    const sqlInsert = "INSERT INTO facturas (id_factura, nombre_proveedor, monto, fecha_a_realizar, detalle, estado) VALUES (?, ?, ?, ?, ?, 'pendiente')";
 
-const { id_factura, nombre_proveedor, monto, fecha_a_realizar, detalle } = req.body;
+    db.query(sqlInsert, [id_factura, nombre_proveedor, monto, fecha_a_realizar, detalle], (err, result) => {
+        if (err) return res.status(500).json({ error: err.sqlMessage });
+        io.emit('facturas_actualizadas');
 
-const sqlInsert = "INSERT INTO facturas (id_factura, nombre_proveedor, monto, fecha_a_realizar, detalle, estado) VALUES (?, ?, ?, ?, ?, 'pendiente')";
-
-
-db.query(sqlInsert, [id_factura, nombre_proveedor, monto, fecha_a_realizar, detalle], (err, result) => {
-
-if (err) return res.status(500).json({ error: err.sqlMessage });
-
-
-console.log("¡Factura guardada!");
-
-
-
-io.emit('facturas_actualizadas');
-
-
-
-const hoyStr = new Date().toLocaleDateString('sv-SE');
-
-const sqlSelect = "SELECT id_factura, nombre_proveedor, monto, detalle FROM facturas WHERE estado = 'pendiente' AND fecha_a_realizar <= ?";
-
-
-db.query(sqlSelect, [hoyStr], (errSelect, facturasPendientes) => {
-
-if (!errSelect && facturasPendientes.length > 0) {
-
-let mensaje = `🚨 *PARACHE HERRAMIENTAS - NUEVA FACTURA REGISTRADA* 🚨\n`;
-
-mensaje += `Se registró una factura y tenés *${facturasPendientes.length}* pago(s) pendiente(s) para hoy:\n\n`;
-
-
-
-facturasPendientes.forEach((f, index) => {
-
-mensaje += `*${index + 1}. Proveedor:* ${f.nombre_proveedor}\n`;
-
-mensaje += ` • *Factura N°:* ${f.id_factura}\n`;
-
-mensaje += ` • *Monto:* $${Number(f.monto).toLocaleString('es-AR')}\n\n`;
-
+        const hoyStr = new Date().toLocaleDateString('sv-SE');
+        db.query("SELECT id_factura, nombre_proveedor, monto, detalle FROM facturas WHERE estado = 'pendiente' AND fecha_a_realizar <= ?", [hoyStr], (errSelect, facturasPendientes) => {
+            if (!errSelect && facturasPendientes.length > 0) {
+                let mensaje = `🚨 *PARACHE HERRAMIENTAS - NUEVA FACTURA REGISTRADA* 🚨\nSe registró una factura y tenés *${facturasPendientes.length}* pendiente(s):\n\n`;
+                facturasPendientes.forEach((f, i) => mensaje += `*${i + 1}. ${f.nombre_proveedor}* - $${Number(f.monto).toLocaleString('es-AR')}\n`);
+                
+                // LLAMADA CORREGIDA
+                enviarWhatsAppSeguro(mensaje);
+            }
+        });
+        return res.status(200).json({ message: "Factura agendada correctamente" });
+    });
 });
-
-
-
-numerosDestino.forEach(numero => {
-
-client.sendMessage(numero, mensaje).catch(e => console.error(e));
-
-});
-
-}
-
-});
-
-
-
-return res.status(200).json({ message: "Factura agendada correctamente" });
-
-});
-
-});
-
-
 
 app.put('/api/facturas/:id', (req, res) => {
-
-const { id } = req.params;
-
-const sqlBuscar = "SELECT nombre_proveedor, monto FROM facturas WHERE id_factura = ?";
-
-
-db.query(sqlBuscar, [id], (errBuscar, resultado) => {
-
-if (errBuscar || resultado.length === 0) return res.status(404).json({ error: "No encontrada" });
-
-
-
-const factura = resultado[0];
-
-const sqlUpdate = "UPDATE facturas SET estado = 'pagado' WHERE id_factura = ?";
-
-
-db.query(sqlUpdate, [id], (errUpdate, resultUpdate) => {
-
-if (errUpdate) return res.status(500).json(errUpdate);
-
-
-io.emit('facturas_actualizadas');
-
-
-
-let mensajePago = `✅ *PAGO REGISTRADO - PARACHE HERRAMIENTAS*\n\n`;
-
-mensajePago += `• *N° Factura:* ${id}\n`;
-
-mensajePago += `• *Proveedor:* ${factura.nombre_proveedor}\n`;
-
-mensajePago += `• *Monto:* $${Number(factura.monto).toLocaleString('es-AR')}\n`;
-
-
-
-numerosDestino.forEach(numero => {
-
-client.sendMessage(numero, mensajePago).catch(e => console.error(e));
-
+    const { id } = req.params;
+    db.query("SELECT nombre_proveedor, monto FROM facturas WHERE id_factura = ?", [id], (err, resBusqueda) => {
+        if (err || resBusqueda.length === 0) return res.status(404).json({ error: "No encontrada" });
+        const factura = resBusqueda[0];
+        db.query("UPDATE facturas SET estado = 'pagado' WHERE id_factura = ?", [id], () => {
+            io.emit('facturas_actualizadas');
+            let mensajePago = `✅ *PAGO REGISTRADO - PARACHE HERRAMIENTAS*\n\n• Factura: ${id}\n• Proveedor: ${factura.nombre_proveedor}\n• Monto: $${Number(factura.monto).toLocaleString('es-AR')}`;
+            
+            // LLAMADA CORREGIDA
+            enviarWhatsAppSeguro(mensajePago);
+            return res.json({ message: "Factura marcada como pagada" });
+        });
+    });
 });
-
-
-
-return res.json({ message: "Factura marcada como pagada" });
-
-});
-
-});
-
-});
-
-
 
 app.post('/api/notificar-whatsapp', (req, res) => {
-
-const hoyStr = new Date().toLocaleDateString('sv-SE');
-
-const sql = "SELECT id_factura, nombre_proveedor, monto, detalle FROM facturas WHERE estado = 'pendiente' AND fecha_a_realizar <= ?";
-
-
-db.query(sql, [hoyStr], (err, result) => {
-
-if (err || result.length === 0) return res.json({ message: "Sin pendientes" });
-
-
-
-let mensaje = `🚨 *PARACHE HERRAMIENTAS - ALERTA DE PAGO* 🚨\n`;
-
-
-
-numerosDestino.forEach(numero => client.sendMessage(numero, mensaje).catch(e => console.error(e)));
-
-res.json({ success: true });
-
+    const hoyStr = new Date().toLocaleDateString('sv-SE');
+    db.query("SELECT id_factura, nombre_proveedor, monto, detalle FROM facturas WHERE estado = 'pendiente' AND fecha_a_realizar <= ?", [hoyStr], (err, result) => {
+        if (err || result.length === 0) return res.json({ message: "Sin pendientes" });
+        let mensaje = `🚨 *PARACHE HERRAMIENTAS - ALERTA DE PAGO* 🚨\n`;
+        
+   
+        enviarWhatsAppSeguro(mensaje);
+        res.json({ success: true });
+    });
 });
-
-});
-
-
 
 function ejecutarNotificaciones() {
-
-const hoy = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
-
-console.log(`Cron Job: Buscando facturas con vencimiento ${hoy}...`);
-
-
-const sql = "SELECT * FROM facturas WHERE estado = 'pendiente' AND fecha_a_realizar = ?";
-
-
-db.query(sql, [hoy], (err, result) => {
-
-if (err) { console.error('Error DB:', err); return; }
-
-if (result.length === 0) { console.log("Sin facturas para hoy."); return; }
-
-
-
-let mensaje = `🚨 *PARACHE HERRAMIENTAS - RECORDATORIO DE PAGO HOY* 🚨\n\n`;
-
-result.forEach((f, index) => {
-
-mensaje += `*${index + 1}. ${f.nombre_proveedor}* - $${Number(f.monto).toLocaleString('es-AR')}\n`;
-
-});
-
-
-
-numerosDestino.forEach(num => client.sendMessage(num, mensaje).catch(e => console.error(e)));
-
-});
-
+    const hoy = new Date().toISOString().split('T')[0];
+    db.query("SELECT * FROM facturas WHERE estado = 'pendiente' AND fecha_a_realizar = ?", [hoy], (err, result) => {
+        if (err || result.length === 0) return;
+        let mensaje = `🚨 *PARACHE HERRAMIENTAS - RECORDATORIO DE PAGO HOY* 🚨\n\n`;
+        result.forEach((f, i) => mensaje += `*${i + 1}. ${f.nombre_proveedor}* - $${Number(f.monto).toLocaleString('es-AR')}\n`);
+        
+   
+        enviarWhatsAppSeguro(mensaje);
+    });
 }
-
 
 
 cron.schedule('05 19 * * *', () => {
