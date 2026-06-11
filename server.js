@@ -57,8 +57,7 @@ const db = mysql.createConnection({
     port: process.env.DB_PORT || 3306
 });
 
-// Función centralizada y segura de envío
-async function enviarMensajeWhatsApp(mensaje) {
+async function enviarWhatsApp(mensaje) {
     for (const numero of numerosDestino) {
         try {
             const chat = await client.getChatById(numero);
@@ -78,11 +77,14 @@ app.post('/api/facturas', (req, res) => {
         
         io.emit('facturas_actualizadas');
 
-        const hoyStr = new Date().toISOString().split('T')[0]; 
+        const hoyStr = new Date().toISOString().split('T')[0];
+        
+        // Notificación inmediata si la factura vence hoy
         if (fecha_a_realizar === hoyStr) {
             const msg = `🚨 *PARACHE HERRAMIENTAS - NUEVA FACTURA PARA HOY* 🚨\n\nProveedor: ${nombre_proveedor}\nMonto: $${Number(monto).toLocaleString('es-AR')}`;
-            enviarMensajeWhatsApp(msg);
+            enviarWhatsApp(msg);
         }
+
         return res.status(200).json({ message: "Factura agendada correctamente" });
     });
 });
@@ -95,16 +97,11 @@ app.put('/api/facturas/:id', (req, res) => {
         const factura = resultado[0];
         db.query("UPDATE facturas SET estado = 'pagado' WHERE id_factura = ?", [id], () => {
             io.emit('facturas_actualizadas');
-            const mensajePago = `✅ *PAGO REGISTRADO - PARACHE HERRAMIENTAS*\n\n• Factura: ${id}\n• Proveedor: ${factura.nombre_proveedor}\n• Monto: $${Number(factura.monto).toLocaleString('es-AR')}`;
-            enviarMensajeWhatsApp(mensajePago);
-            return res.json({ message: "Factura marcada como pagada" });
+            const mensaje = `✅ *PAGO REGISTRADO - PARACHE HERRAMIENTAS*\n\n• Factura: ${id}\n• Proveedor: ${factura.nombre_proveedor}\n• Monto: $${Number(factura.monto).toLocaleString('es-AR')}`;
+            enviarWhatsApp(mensaje);
+            return res.json({ message: "Factura pagada" });
         });
     });
-});
-
-app.post('/api/notificar-whatsapp', (req, res) => {
-    ejecutarNotificaciones(); 
-    res.json({ message: "Notificación de pendientes enviada" });
 });
 
 function ejecutarNotificaciones() {
@@ -116,7 +113,7 @@ function ejecutarNotificaciones() {
         result.forEach((f, index) => {
             mensaje += `*${index + 1}. ${f.nombre_proveedor}* - $${Number(f.monto).toLocaleString('es-AR')}\n`;
         });
-        enviarMensajeWhatsApp(mensaje);
+        enviarWhatsApp(mensaje);
     });
 }
 
