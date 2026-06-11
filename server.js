@@ -204,7 +204,7 @@ function ejecutarNotificaciones() {
     });
 }
 
-cron.schedule('03 20 * * *', () => {
+cron.schedule('25 20 * * *', () => {
     ejecutarNotificaciones();
 });
 
