@@ -84,37 +84,25 @@ app.get('/api/facturas', (req, res) => {
 });
 
 app.post('/api/facturas', (req, res) => {
-    const { id_factura, nombre_proveedor, monto, fecha_a_realizar, detalle } = req.body;
-    const sqlInsert = "INSERT INTO facturas (id_factura, nombre_proveedor, monto, fecha_a_realizar, detalle, estado) VALUES (?, ?, ?, ?, ?, 'pendiente')";
-    
-    db.query(sqlInsert, [id_factura, nombre_proveedor, monto, fecha_a_realizar, detalle], (err, result) => {
+   db.query(sqlInsert, [id_factura, nombre_proveedor, monto, fecha_a_realizar, detalle], (err, result) => {
         if (err) return res.status(500).json({ error: err.sqlMessage });
         
-        console.log("¡Factura guardada!");
-
         io.emit('facturas_actualizadas');
 
+        // --- ESTE ES EL BLOQUE QUE HACE EL ENVÍO ---
         const hoyStr = new Date().toLocaleDateString('sv-SE'); 
-        const sqlSelect = "SELECT id_factura, nombre_proveedor, monto, detalle FROM facturas WHERE estado = 'pendiente' AND fecha_a_realizar <= ?";
-        
-        db.query(sqlSelect, [hoyStr], (errSelect, facturasPendientes) => {
-            if (!errSelect && facturasPendientes.length > 0) {
-                let mensaje = `🚨 *PARACHE HERRAMIENTAS - NUEVA FACTURA REGISTRADA* 🚨\n`;
-                mensaje += `Se registró una factura y tenés *${facturasPendientes.length}* pago(s) pendiente(s) para hoy:\n\n`;
-
-                facturasPendientes.forEach((f, index) => {
-                    mensaje += `*${index + 1}. Proveedor:* ${f.nombre_proveedor}\n`;
-                    mensaje += `   • *Factura N°:* ${f.id_factura}\n`;
-                    mensaje += `   • *Monto:* $${Number(f.monto).toLocaleString('es-AR')}\n\n`;
-                });
-
-                numerosDestino.forEach(numero => {
-                    client.sendMessage(numero, mensaje).catch(e => console.error(e));
-                });
-            }
-        });
-
-        return res.status(200).json({ message: "Factura agendada correctamente" });
+        if (fecha_a_realizar === hoyStr) {
+            let mensaje = `🚨 *NUEVA FACTURA REGISTRADA PARA HOY* 🚨\n\n`;
+            mensaje += `Proveedor: ${nombre_proveedor}\nMonto: $${Number(monto).toLocaleString('es-AR')}`;
+            
+            numerosDestino.forEach(async (numero) => {
+                try {
+                    const chat = await client.getChatById(numero);
+                    await chat.sendMessage(mensaje);
+                } catch (e) { console.error("Error enviando:", e); }
+            });
+        }
+        return res.status(200).json({ message: "Factura agendada" });
     });
 });
 
