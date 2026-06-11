@@ -73,6 +73,22 @@ io.on('connection', (socket) => {
     console.log(`🔌 Cliente conectado al tiempo real: ${socket.id}`);
 });
 
+async function enviarMensajesSeguros(mensaje) {
+    for (const numero of numerosDestino) {
+        try {
+            
+            const chat = await client.getChatById(numero);
+            
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            await chat.sendMessage(mensaje);
+            console.log(`✅ Mensaje enviado exitosamente a ${numero}`);
+        } catch (error) {
+            console.error(`❌ Error enviando a ${numero}:`, error);
+        }
+    }
+    
+}
 app.get('/api/facturas', (req, res) => {
     const sql = "SELECT id_factura, nombre_proveedor, monto, DATE_FORMAT(fecha_a_realizar, '%Y-%m-%d') AS fecha_a_realizar, detalle, estado FROM facturas ORDER BY fecha_a_realizar ASC";
     db.query(sql, (err, result) => {
@@ -106,6 +122,22 @@ app.post('/api/facturas', (req, res) => {
                 } catch (e) { console.error("Error enviando:", e); }
             });
         }
+        async function enviarMensajesSeguros(mensaje) {
+    for (const numero of numerosDestino) {
+        try {
+            
+            const chat = await client.getChatById(numero);
+            
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            await chat.sendMessage(mensaje);
+            console.log(`✅ Mensaje enviado exitosamente a ${numero}`);
+        } catch (error) {
+            console.error(`❌ Error enviando a ${numero}:`, error);
+        }
+    }
+await enviarMensajesSeguros(mensaje);
+}
         return res.status(200).json({ message: "Factura agendada" });
     });
 });
