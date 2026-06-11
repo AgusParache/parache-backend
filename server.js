@@ -14,12 +14,11 @@ const corsOptions = {
   origin: [
     'https://parache-frontend.vercel.app',
     'https://parache-frontend-git-main-agustina-s-projects7.vercel.app',
-    'https://parache-frontend-clzo83mdm-agustina-s-projects7.vercel.app',
+    'https://parache-frontend-clzo83mdm-agustina-s-projects7.vercel.app'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 };
-
 app.use(cors(corsOptions));
 
 app.use(express.json());
