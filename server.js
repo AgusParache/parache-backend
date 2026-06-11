@@ -150,9 +150,21 @@ console.log(`🔌 Cliente conectado al tiempo real: ${socket.id}`);
 
 });
 async function enviarWhatsAppSeguro(mensaje) {
+  
+    if (!client.info) {
+        console.warn("⚠️ Intento de envío abortado: El cliente de WhatsApp no está listo.");
+        return; 
+    }
+
     for (const numero of numerosDestino) {
         try {
             const chat = await client.getChatById(numero);
+            
+            if (!chat) {
+                console.error(`No se pudo encontrar el chat para: ${numero}`);
+                continue;
+            }
+
             await chat.sendStateTyping();
             await new Promise(resolve => setTimeout(resolve, 2000));
             await chat.sendMessage(mensaje);
@@ -162,7 +174,6 @@ async function enviarWhatsAppSeguro(mensaje) {
         }
     }
 }
-
 
 app.post('/api/facturas', (req, res) => {
     const { id_factura, nombre_proveedor, monto, fecha_a_realizar, detalle } = req.body;
@@ -227,7 +238,7 @@ function ejecutarNotificaciones() {
 }
 
 
-cron.schedule('05 19 * * *', () => {
+cron.schedule('12 19 * * *', () => {
 
 ejecutarNotificaciones();
 
