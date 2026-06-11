@@ -172,7 +172,7 @@ function ejecutarNotificaciones() {
     });
 }
 
-cron.schedule('57 19 * * *', () => {
+cron.schedule('03 20 * * *', () => {
     ejecutarNotificaciones();
 });
 
